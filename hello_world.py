@@ -6,7 +6,15 @@ import urllib.request
 
 
 def main():
-    print ("Hello World!")
+
+    url = "http://www.bbc.com/news/technology-34504319"
+    page = urllib.request.urlopen(url)
+
+    soup = BeautifulSoup(page.read(), "html.parser")
+
+
+
+    print(soup.title.string)
 
 
 if __name__ == "__main__":
