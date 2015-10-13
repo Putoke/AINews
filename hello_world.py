@@ -1,21 +1,18 @@
-#bajs
 __author__ = 'joakim'
 
 import nltk
 from bs4 import BeautifulSoup
 import urllib.request
+from parser import NewsParser
 
 
 def main():
 
-    url = "http://www.bbc.com/news/technology-34504319"
-    page = urllib.request.urlopen(url)
+    parser = NewsParser()
+    #parser.fetchFromFile('articles')
 
-    soup = BeautifulSoup(page.read(), "html.parser")
-
-
-
-    print(soup.title.string)
+    #print(parser.fetchFromNytCrawler('asdf'))
+    print(parser.test())
 
 
 if __name__ == "__main__":
