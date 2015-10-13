@@ -24,6 +24,7 @@ def main():
 
     articles = set()
 
+    i = 0
     for article in articleLinks:
         sida = requests.get(article, timeout=5)
         soppa = BeautifulSoup(sida.content, "html.parser")
@@ -33,8 +34,10 @@ def main():
         articleText = ""
         for t in bodytext:
             articleText += t.text
-        articleTuple = (header, articleText)
+        articleTuple = (header.text, articleText)
         articles.add(articleTuple)
+        i = i + 1
+        print ("Article: " + str(i) + "/" + str(len(articleLinks)) + " added.")
 
     #return articles
 
