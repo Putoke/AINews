@@ -9,9 +9,7 @@ from parser import NewsParser
 def main():
 
     parser = NewsParser()
-    #parser.fetchFromFile('articles')
-
-    #print(parser.fetchFromNytCrawler('asdf'))
+    #parser.corpusFromCrawler('technology')
     print(parser.test())
 
 

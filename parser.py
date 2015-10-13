@@ -3,6 +3,7 @@ __author__ = 'fredrik'
 from bs4 import BeautifulSoup
 import urllib.request
 import nltk
+import requests
 
 class NewsParser:
 
@@ -25,49 +26,67 @@ class NewsParser:
             data = self.fetchBBC(line)
             output.write(data)
 
+    def corpusFromCrawler(self, subject):
+        f = open('nyt_corpus', 'w')
+        for tuple in self.fetchFromNytCrawler(subject):
+            f.write(tuple[1])
+        return
+
     def fetchFromNytCrawler(self, subject):
-        page = urllib.request.urlopen('http://www.nytimes.com/2015/10/14/technology/twitter-to-cut-more-than-300-jobs.html?ref=technology')
-        soup = BeautifulSoup(page.read(), "html.parser")
-        data = soup.find('div', {'class':'story-body'})
 
-        string = ""
-        for asdf in data.find_all('p'):
-            string += asdf.text + ' '
+        articleLinks = self.crawlTime(subject)
 
-        return string
+        articles = set()
+
+        i = 0
+        for article in articleLinks:
+            sida = requests.get(article, timeout=5)
+            soppa = BeautifulSoup(sida.content, "html.parser")
+            header = soppa.find('', {"class": "story-heading"})
+            body = soppa.find('div', {"class": "story-body"})
+            bodytext = soppa.find_all('p', {"class": "story-content"})
+            articleText = ""
+            for t in bodytext:
+                articleText += t.text
+            articleTuple = (header.text, articleText)
+            articles.add(articleTuple)
+            i = i + 1
+            print ("Article: " + str(i) + "/" + str(len(articleLinks)) + " added.")
+
+        return articles
 
     def crawlTime(self, subject):
         baseUrl = "http://www.nytimes.com/pages/"
         url = baseUrl + subject + "/index.html"
-        page = urllib.request.urlopen(url)
+        page = requests.get(url, timeout=5)
 
-        soup = BeautifulSoup(page.read(), "html.parser")
-
-        div = soup.find("div", {"class", "searchResults"})
+        soup = BeautifulSoup(page.content, "html.parser")
         links = soup.find_all('a', href=True)
-        articles = set([])
+        articleLinks = set([])
 
         for link in links:
-            if "www.nytimes.com" and "2015/10" in link['href'] and not "interactive" in link['href']: articles.add(link['href'])
+            if "www.nytimes.com" in link['href'] and "com/2015/10" in link['href'] and not "interactive" in link['href']:
+                articleLinks.add(link['href'])
 
-        return articles
+        return articleLinks
 
     def test(self):
 
-        f = open('corpus', 'r')
+        f = open('nyt_corpus', 'r')
 
         content = f.readline()
 
         tokenizer = nltk.tokenize.RegexpTokenizer(r'\w+|[^\w\s]+')
         tokenized_content = tokenizer.tokenize(content)
+        finder = nltk.TrigramCollocationFinder.from_words(tokenized_content)
+        scored = finder.score_ngrams(nltk.collocations.TrigramAssocMeasures.raw_freq)
+        set(trigram for trigram, score in scored) == set(nltk.trigrams(tokenized_content))
+
 
         #tagged = nltk.pos_tag(tokenized_content)
 
-        content_model = nltk.
 
-        return ''
-
-
+        return sorted(finder.nbest(nltk.collocations.TrigramAssocMeasures.raw_freq, 5))
 
 
 
