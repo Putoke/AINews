@@ -42,28 +42,47 @@ class MGen:
 
     def test(self):
 
-        cfd = nltk.probability.ConditionalFreqDist(nltk.bigrams(self.corpus_words))
-        cpd = nltk.probability.ConditionalProbDist(cfd, nltk.MLEProbDist)
+        grams = nltk.ngrams(self.corpus_words,3)
 
-        print(cfd)
-        print(cpd['to'].prob('elect'))
-        print(cpd['to'].generate())
 
-        est = lambda cfd, bins: nltk.LidstoneProbDist(cfd, 0.2)
-
-        print(est)
-
-        return ''
-
-    def test2(self):
-        tags = nltk.tag.pos_tag(self.corpus_words)
-        tag_set = list(set([tag for (word, tag) in tags]))
-        print(len(tag_set))
-        symbols = list(set([word for (word,tag) in tags]))
-        print(len(symbols))
-
-        trainer = nltk.HiddenMarkovModelTrainer(tag_set, symbols)
+        tempgrams = defaultdict(list)
+        for (a,b,c) in grams:
+            tempgrams[(a,b)].append(c)
 
 
 
-        trainer.train_supervised()
+
+        cfd = nltk.probability.ConditionalFreqDist(tempgrams)
+
+
+
+        #fd = nltk.probability.FreqDist(nltk.trigrams(self.corpus_words))
+        #ld = nltk.probability.LidstoneProbDist(fd,0.2)
+
+        cpd = nltk.probability.ConditionalProbDist(cfd, nltk.probability.LidstoneProbDist, 0.2)
+        #cpd = nltk.probability.ConditionalProbDist(cfd, nltk.probability.MLEProbDist)
+
+
+
+        tagged = nltk.pos_tag(self.corpus_words)
+        print(tagged)
+
+        #force | its work
+
+
+        #print(cfd)
+        #print(cpd[cpd.conditions()[random.randint(0,len(cpd.conditions()))]].generate())
+
+        gen_words = []
+        first_word = random.choice(list(cpd.conditions()))
+        gen_words.append(first_word)
+        for i in range(100):
+            next_word = cpd[first_word].generate()
+            gen_words.append(next_word)
+            first_word = next_word
+        #print(cpd['was'].prob('named'))
+
+
+
+
+        return ' '.join(gen_words)
