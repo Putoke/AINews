@@ -4,6 +4,7 @@ from bs4 import BeautifulSoup
 import urllib.request
 import nltk
 import requests
+import random
 
 class NewsParser:
 
@@ -78,15 +79,36 @@ class NewsParser:
 
         tokenizer = nltk.tokenize.RegexpTokenizer(r'\w+|[^\w\s]+')
         tokenized_content = tokenizer.tokenize(content)
-        finder = nltk.TrigramCollocationFinder.from_words(tokenized_content)
-        scored = finder.score_ngrams(nltk.collocations.TrigramAssocMeasures.raw_freq)
-        set(trigram for trigram, score in scored) == set(nltk.trigrams(tokenized_content))
+        ngrams = list(nltk.ngrams(tokenized_content, 3))
 
+        cache = self.db(ngrams)
+        #return tokenized_content
+        return self.generate_text(100, cache, tokenized_content)
 
+    def db(self, ngrams):
+        cache = {}
+        for w1, w2, w3 in ngrams:
+            key = (w1, w2)
+            if key in cache:
+                cache[key].append(w3)
+            else:
+                cache[key] = []
+                cache[key].append(w3)
+
+        return cache
+
+    def generate_text(self, size, cache, tokenized_content):
+        seed = random.randint(0, len(tokenized_content)-3)
+        w1, w2 = tokenized_content[seed], tokenized_content[seed+1]
+        gen_words = []
+        for i in range(size):
+            gen_words.append(w1)
+            #print(cache[(w1, w2)])
+            w1, w2 = w2, random.choice(cache[(w1, w2)])
+        gen_words.append(w2)
+        return ' '.join(gen_words)
+
+    #finder = nltk.QuadgramCollocationFinder.from_words(tokenized_content)
+        #scored = finder.score_ngrams(nltk.collocations.TrigramAssocMeasures.raw_freq)
+        #set(trigram for trigram, score in scored) == set(nltk.trigrams(tokenized_content))
         #tagged = nltk.pos_tag(tokenized_content)
-
-
-        return sorted(finder.nbest(nltk.collocations.TrigramAssocMeasures.raw_freq, 5))
-
-
-
