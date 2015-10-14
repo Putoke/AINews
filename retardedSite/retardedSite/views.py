@@ -5,7 +5,7 @@ from .markov import Markov
 
 def index(request):
     template = loader.get_template('index.html')
-    markov = Markov(open("nyt_corpus_technology"), 3)
+    markov = Markov(open("nyt_corpus_sports"), 3)
     context = RequestContext(request, {
         'text': markov.generate_markov_text(500),
     })

@@ -63,4 +63,5 @@ class Markov(object):
 		return ' '.join(gen_words)
 
 if __name__ == '__main__':
-    Markov("nyt_corpus_arts", 100)
+	markov = Markov(open("../nyt_corpus_technology"), 4)
+	print(markov.generate_markov_text(100))
