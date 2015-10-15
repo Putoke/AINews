@@ -1,5 +1,6 @@
 import random, nltk, itertools
 from collections import Counter
+import pickle
 
 
 class Markov(object):
@@ -71,7 +72,50 @@ class Markov(object):
         index = random.randrange(sum(counted_words.values()))
         return next(itertools.islice(counted_words.elements(), index, None))
 
+
+
+
+class POS():
+
+
+
+    def __init__(self, corpus_file):
+        self.corpus_file = corpus_file
+        self.tagged_words = [(t[0],t[1]) for t in self.load_tagged_file(corpus_file)]
+        self.words, self.pos = zip(*[(t[0], t[1]) for t in self.tagged_words])
+
+        self.x = 0
+
+    def tag_corpus(self, filename):
+        f = open(filename, 'r')
+        f.seek(0)
+        data = f.read()
+        tokenizer = nltk.tokenize.RegexpTokenizer(r'\w+|[^\w\s]+')
+        words = tokenizer.tokenize(data)
+        f.close()
+
+        tagged_words = nltk.pos_tag(words)
+        fi = open(filename+'_tagged', 'wb')
+        pickle.dump(tagged_words, fi)
+        fi.close()
+
+    def load_tagged_file(self, filename):
+        with open(filename, 'rb') as file:
+            data = pickle.load(file)
+
+        return data
+
+        #def get_words_pos(self, pos):
+
+
+
+
+
 if __name__ == '__main__':
-    markov = Markov(open("../A_Game_of_Thrones.txt"), 3)
-    print(markov.generate_markov_text(markov.lidstone_smoothing, 100))
-    print(markov.generate_markov_text(markov.add_one_smoothing, 100))
+    #markov = Markov(open("nyt_corpus_technology"), 4)
+    #print(markov.generate_markov_text(100))
+    #markov.tag_corpus('nyt_corpus_technology')
+
+    pos = POS('nyt_corpus_technology_tagged')
+    print(pos.words)
+    print(pos.pos)
