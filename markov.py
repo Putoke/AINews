@@ -1,4 +1,5 @@
-import random, nltk
+import random, nltk, itertools
+from collections import Counter
 
 
 class Markov(object):
@@ -48,10 +49,21 @@ class Markov(object):
         for i in range(size):
             last_word_len = self.chain_size - 1
             last_words = gen_words[-1 * last_word_len:]
-            next_word = random.choice(self.cache[tuple(last_words)])
+            words_smoothed = self.add_one_smoothing(self.cache[tuple(last_words)])
+            next_word = self.pick_next_word(words_smoothed)
             gen_words.append(next_word)
         return ' '.join(gen_words)
 
+    def add_one_smoothing(self, words):
+        counted_words = Counter(words)
+        for element in counted_words:
+            counted_words[element] += 1
+        return counted_words
+
+    def pick_next_word(self, counted_words):
+        index = random.randrange(sum(counted_words.values()))
+        return next(itertools.islice(counted_words.elements(), index, None))
+
 if __name__ == '__main__':
-    markov = Markov(open("../nyt_corpus_technology"), 4)
+    markov = Markov(open("../A_Game_of_Thrones.txt"), 3)
     print(markov.generate_markov_text(100))

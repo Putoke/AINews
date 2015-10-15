@@ -1,7 +1,8 @@
 from django.shortcuts import render
 from django.template import RequestContext, loader
 
-from .markov import Markov
+from markov import Markov
+
 
 def index(request):
     template = loader.get_template('index.html')
