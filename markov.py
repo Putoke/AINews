@@ -49,7 +49,8 @@ class Markov(object):
         for i in range(size):
             last_word_len = self.chain_size - 1
             last_words = gen_words[-1 * last_word_len:]
-            words_smoothed = self.add_one_smoothing(self.cache[tuple(last_words)])
+            #words_smoothed = self.add_one_smoothing(self.cache[tuple(last_words)])
+            words_smoothed = self.lidstone_smoothing(self.cache[tuple(last_words)])
             next_word = self.pick_next_word(words_smoothed)
             gen_words.append(next_word)
         return ' '.join(gen_words)
@@ -58,6 +59,13 @@ class Markov(object):
         counted_words = Counter(words)
         for element in counted_words:
             counted_words[element] += 1
+        return counted_words
+
+    def lidstone_smoothing(self, words):
+        counted_words = Counter(words)
+        for element in counted_words:
+            counted_words[element] *= 10
+            counted_words[element] += 2
         return counted_words
 
     def pick_next_word(self, counted_words):
