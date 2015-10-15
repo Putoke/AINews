@@ -1,7 +1,5 @@
-__author__ = 'joakim'
+import random, nltk
 
-import random
-import nltk
 
 class Markov(object):
 
@@ -21,22 +19,12 @@ class Markov(object):
         return words
 
     def words_at_position(self, i):
-        """Uses the chain size to find a list of the words at an index."""
         chain = []
         for chain_index in range(0, self.chain_size):
             chain.append(self.words[i + chain_index])
         return chain
 
     def chains(self):
-        """Generates chains from the given data string based on passed chain size.
-        So if our string were:
-            "What a lovely day"
-        With a chain size of 3, we'd generate:
-            (What, a, lovely)
-        and
-            (a, lovely, day)
-        """
-
         if len(self.words) < self.chain_size:
             return
 
