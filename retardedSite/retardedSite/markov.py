@@ -31,9 +31,9 @@ class Markov(object):
             last_word = gram[self.chain_size-1]
             self.dictionary[tuple(gram[x][0] for x in range(self.chain_size-1))].append(last_word)
 
-    def generate_markov_text(self, smoothing_function, size=25):
+    def generate_markov_text(self, smoothing_function, size=25, is_headline=False):
         seed = random.randint(0, self.word_size - 3)
-        while self.tagged_words[seed][1] != 'DT': #Always start on a DT word
+        while self.tagged_words[seed][1] != 'DT' and self.tagged_words[seed][0] == "." and self.tagged_words[seed][0] == ",": #Always start on a DT word
             seed = random.randint(0, self.word_size - 3)
         gen_words = []
         final_words = []
@@ -56,8 +56,9 @@ class Markov(object):
         final_words[0] = final_words[0].title()
 
         final_text = ' '.join(final_words)
-        last_dot = final_text.rfind(".")
-        final_text = final_text[:-(len(final_text)-last_dot-1)]
+        if not is_headline:
+            last_dot = final_text.rfind(".")
+            final_text = final_text[:-(len(final_text)-last_dot-1)]
 
         final_text = final_text.replace(" ,", ",")
         final_text = final_text.replace(" .", ".")
@@ -69,6 +70,8 @@ class Markov(object):
         final_text = re.sub(r"“|”", "", final_text)
         final_text = re.sub(r"\(|\)", "", final_text)
         final_text = re.sub(r"\s\s", " ", final_text)
+
+        #check for dots and uppercase
 
         return final_text
 
@@ -108,6 +111,6 @@ class Markov(object):
         return data
 
 if __name__ == '__main__':
-    #Markov.tag_corpus("retardedSite/nyt_corpus_business")
-    markov = Markov("retardedSite/nyt_corpus_business_tagged", 4)
-    print(markov.generate_markov_text(markov.add_one_smoothing, 300))
+    Markov.tag_corpus("retardedSite/nyt_corpus_business_head")
+    #markov = Markov("retardedSite/nyt_corpus_business_head_tagged", 4)
+    #print(markov.generate_markov_text(markov.add_one_smoothing, 10, True))
