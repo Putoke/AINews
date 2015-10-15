@@ -1,7 +1,7 @@
 import random, nltk, itertools
 from collections import Counter, defaultdict
 import pickle
-
+from nltk.parse.generate import demo_grammar
 
 class Markov(object):
 
@@ -10,19 +10,22 @@ class Markov(object):
         self.dictionary = defaultdict(list)
         self.corpus_file = corpus_file
         self.tagged_words = [(t[0],t[1]) for t in self.load_tagged_file(corpus_file)]
-
-        """self.test_dict = defaultdict(list)
-        self.tagged_grams = list(nltk.ngrams(self.tagged_words, self.chain_size))
-        for gram in self.tagged_grams:
-            last_word = gram[self.chain_size-1]
-            self.test_dict[tuple(gram[x][0] for x in range(self.chain_size-1))].append(last_word)"""
-        #print(Counter(self.test_dict[('may', 'have')]))
-
         self.words, self.pos = zip(*[(t[0], t[1]) for t in self.tagged_words])
         self.n_grams = self.create_n_grams()
         self.word_size = len(self.words)
         self.create_dictionary()
         self.x = 0
+
+        self.chunker = nltk.RegexpParser('''
+        NP: {<DT>? <JJ>* <NN>*} # NP
+        P: {<IN>}           # Preposition
+        V: {<V.*>}          # Verb
+        PP: {<P> <NP>}      # PP -> P NP
+        VP: {<V> <NP|PP>*}  # VP -> V (NP|PP)*
+        ''')
+        asd = self.chunker.parse(self.tagged_words[:20])
+
+        #print(Counter(self.test_dict[('may', 'have')]))
 
     def file_to_words(self):
         self.open_file.seek(0)
@@ -95,11 +98,14 @@ class Markov(object):
         return data
 
 if __name__ == '__main__':
-    markov = Markov("../nyt_corpus_technology_tagged", 3)
+    markov = Markov("retardedSite/A_Game_of_Thrones.txt_tagged", 3)
     print(markov.generate_markov_text(markov.lidstone_smoothing, 100))
+    tmp = []
+    for asd in markov.tagged_words:
+        if asd[0] == "a" or asd[0] == "an":
+            tmp.append(asd[1])
+    #print(Counter(tmp)) #All non-tagged strings
+
     #print(markov.generate_markov_text(markov.add_one_smoothing, 100))
     #markov.tag_corpus('nyt_corpus_technology')
-
     #Markov.tag_corpus('../nyt_corpus_technology')
-    #print(pos.words)
-    #print(pos.tagged_words)
