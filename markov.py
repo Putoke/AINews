@@ -41,7 +41,7 @@ class Markov(object):
             else:
                 self.cache[key] = [next_word]
 
-    def generate_markov_text(self, size=25):
+    def generate_markov_text(self, smoothing_function, size=25):
         seed = random.randint(0, self.word_size - 3)
         gen_words = []
         seed_words = self.words_at_position(seed)[:-1]
@@ -49,8 +49,7 @@ class Markov(object):
         for i in range(size):
             last_word_len = self.chain_size - 1
             last_words = gen_words[-1 * last_word_len:]
-            #words_smoothed = self.add_one_smoothing(self.cache[tuple(last_words)])
-            words_smoothed = self.lidstone_smoothing(self.cache[tuple(last_words)])
+            words_smoothed = smoothing_function(self.cache[tuple(last_words)])
             next_word = self.pick_next_word(words_smoothed)
             gen_words.append(next_word)
         return ' '.join(gen_words)
@@ -74,4 +73,5 @@ class Markov(object):
 
 if __name__ == '__main__':
     markov = Markov(open("../A_Game_of_Thrones.txt"), 3)
-    print(markov.generate_markov_text(100))
+    print(markov.generate_markov_text(markov.lidstone_smoothing, 100))
+    print(markov.generate_markov_text(markov.add_one_smoothing, 100))
