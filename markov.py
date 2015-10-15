@@ -1,7 +1,8 @@
 import random, nltk, itertools
 from collections import Counter, defaultdict
 import pickle
-from nltk.parse.generate import demo_grammar
+import re
+from nltk.tag import StanfordNERTagger
 
 class Markov(object):
 
@@ -9,30 +10,12 @@ class Markov(object):
         self.chain_size = chain_size
         self.dictionary = defaultdict(list)
         self.corpus_file = corpus_file
-        self.tagged_words = [(t[0],t[1]) for t in self.load_tagged_file(corpus_file)]
+        self.tagged_words = [(t[0].lower(),t[1]) for t in self.load_tagged_file(corpus_file)]
         self.words, self.pos = zip(*[(t[0], t[1]) for t in self.tagged_words])
         self.n_grams = self.create_n_grams()
         self.word_size = len(self.words)
         self.create_dictionary()
         self.x = 0
-
-        self.chunker = nltk.RegexpParser('''
-        NP: {<DT>? <JJ>* <NN>*} # NP
-        P: {<IN>}           # Preposition
-        V: {<V.*>}          # Verb
-        PP: {<P> <NP>}      # PP -> P NP
-        VP: {<V> <NP|PP>*}  # VP -> V (NP|PP)*
-        ''')
-        asd = self.chunker.parse(self.tagged_words[:20])
-
-        #print(Counter(self.test_dict[('may', 'have')]))
-
-    def file_to_words(self):
-        self.open_file.seek(0)
-        data = self.open_file.read()
-        tokenizer = nltk.tokenize.RegexpTokenizer(r'\w+|[^\w\s]+')
-        words = tokenizer.tokenize(data)
-        return words
 
     def words_at_position(self, i):
         chain = []
@@ -50,16 +33,44 @@ class Markov(object):
 
     def generate_markov_text(self, smoothing_function, size=25):
         seed = random.randint(0, self.word_size - 3)
+        while self.tagged_words[seed][1] != 'DT': #Always start on a DT word
+            seed = random.randint(0, self.word_size - 3)
         gen_words = []
+        final_words = []
         seed_words = self.words_at_position(seed)[:-1]
+        seed_words[0].title()
         gen_words.extend(seed_words)
         for i in range(size):
             last_word_len = self.chain_size - 1
             last_words = gen_words[-1 * last_word_len:]
             words_smoothed = smoothing_function(self.dictionary[tuple(last_words)])
             next_word = self.pick_next_word(words_smoothed)
-            gen_words.append(next_word)
-        return ' '.join(gen_words)
+            gen_words.append(next_word[0])
+            if last_words[len(last_words)-1] == "." or last_words[len(last_words)-1] == "?":
+                final_words.append(next_word[0].title())
+            elif next_word[1] == "NNP":
+                final_words.append(next_word[0].title())
+            elif next_word[1] != "-NONE-":
+                final_words.append(next_word[0])
+
+        final_words[0] = final_words[0].title()
+
+        final_text = ' '.join(final_words)
+        last_dot = final_text.rfind(".")
+        final_text = final_text[:-(len(final_text)-last_dot-1)]
+
+        final_text = final_text.replace(" ,", ",")
+        final_text = final_text.replace(" .", ".")
+        final_text = final_text.replace(" ?", "?")
+        final_text = final_text.replace(" ’ ", "’")
+        final_text = final_text.replace(" i ", " I ")
+        final_text = final_text.replace(" i,", " I,")
+        final_text = re.sub(r"i\'", "I'", final_text)
+        final_text = re.sub(r"“|”", "", final_text)
+        final_text = re.sub(r"\(|\)", "", final_text)
+        final_text = re.sub(r"\s\s", " ", final_text)
+
+        return final_text
 
     def add_one_smoothing(self, words):
         counted_words = Counter(words)
@@ -76,7 +87,7 @@ class Markov(object):
 
     def pick_next_word(self, counted_words):
         index = random.randrange(sum(counted_words.values()))
-        return next(itertools.islice(counted_words.elements(), index, None))[0]
+        return next(itertools.islice(counted_words.elements(), index, None))
 
     @staticmethod
     def tag_corpus(filename):
@@ -94,18 +105,9 @@ class Markov(object):
     def load_tagged_file(self, filename):
         with open(filename, 'rb') as file:
             data = pickle.load(file)
-
         return data
 
 if __name__ == '__main__':
-    markov = Markov("retardedSite/A_Game_of_Thrones.txt_tagged", 3)
-    print(markov.generate_markov_text(markov.lidstone_smoothing, 100))
-    tmp = []
-    for asd in markov.tagged_words:
-        if asd[0] == "a" or asd[0] == "an":
-            tmp.append(asd[1])
-    #print(Counter(tmp)) #All non-tagged strings
-
-    #print(markov.generate_markov_text(markov.add_one_smoothing, 100))
-    #markov.tag_corpus('nyt_corpus_technology')
-    #Markov.tag_corpus('../nyt_corpus_technology')
+    #Markov.tag_corpus("retardedSite/nyt_corpus_business")
+    markov = Markov("retardedSite/nyt_corpus_business_tagged", 4)
+    print(markov.generate_markov_text(markov.add_one_smoothing, 300))
