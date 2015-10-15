@@ -1,17 +1,28 @@
 import random, nltk, itertools
-from collections import Counter
+from collections import Counter, defaultdict
 import pickle
 
 
 class Markov(object):
 
-    def __init__(self, open_file, chain_size=3):
+    def __init__(self, corpus_file, chain_size=3):
         self.chain_size = chain_size
-        self.cache = {}
-        self.open_file = open_file
-        self.words = self.file_to_words()
+        self.dictionary = defaultdict(list)
+        self.corpus_file = corpus_file
+        self.tagged_words = [(t[0],t[1]) for t in self.load_tagged_file(corpus_file)]
+
+        """self.test_dict = defaultdict(list)
+        self.tagged_grams = list(nltk.ngrams(self.tagged_words, self.chain_size))
+        for gram in self.tagged_grams:
+            last_word = gram[self.chain_size-1]
+            self.test_dict[tuple(gram[x][0] for x in range(self.chain_size-1))].append(last_word)"""
+        #print(Counter(self.test_dict[('may', 'have')]))
+
+        self.words, self.pos = zip(*[(t[0], t[1]) for t in self.tagged_words])
+        self.n_grams = self.create_n_grams()
         self.word_size = len(self.words)
-        self.database()
+        self.create_dictionary()
+        self.x = 0
 
     def file_to_words(self):
         self.open_file.seek(0)
@@ -26,21 +37,13 @@ class Markov(object):
             chain.append(self.words[i + chain_index])
         return chain
 
-    def chains(self):
-        if len(self.words) < self.chain_size:
-            return
+    def create_n_grams(self):
+        return list(nltk.ngrams(self.tagged_words, self.chain_size))
 
-        for i in range(len(self.words) - self.chain_size - 1):
-            yield tuple(self.words_at_position(i))
-
-    def database(self):
-        for chain_set in self.chains():
-            key = chain_set[:self.chain_size - 1]
-            next_word = chain_set[-1]
-            if key in self.cache:
-                self.cache[key].append(next_word)
-            else:
-                self.cache[key] = [next_word]
+    def create_dictionary(self):
+        for gram in self.n_grams:
+            last_word = gram[self.chain_size-1]
+            self.dictionary[tuple(gram[x][0] for x in range(self.chain_size-1))].append(last_word)
 
     def generate_markov_text(self, smoothing_function, size=25):
         seed = random.randint(0, self.word_size - 3)
@@ -50,7 +53,7 @@ class Markov(object):
         for i in range(size):
             last_word_len = self.chain_size - 1
             last_words = gen_words[-1 * last_word_len:]
-            words_smoothed = smoothing_function(self.cache[tuple(last_words)])
+            words_smoothed = smoothing_function(self.dictionary[tuple(last_words)])
             next_word = self.pick_next_word(words_smoothed)
             gen_words.append(next_word)
         return ' '.join(gen_words)
@@ -70,30 +73,16 @@ class Markov(object):
 
     def pick_next_word(self, counted_words):
         index = random.randrange(sum(counted_words.values()))
-        return next(itertools.islice(counted_words.elements(), index, None))
+        return next(itertools.islice(counted_words.elements(), index, None))[0]
 
-
-
-
-class POS():
-
-
-
-    def __init__(self, corpus_file):
-        self.corpus_file = corpus_file
-        self.tagged_words = [(t[0],t[1]) for t in self.load_tagged_file(corpus_file)]
-        self.words, self.pos = zip(*[(t[0], t[1]) for t in self.tagged_words])
-
-        self.x = 0
-
-    def tag_corpus(self, filename):
+    @staticmethod
+    def tag_corpus(filename):
         f = open(filename, 'r')
         f.seek(0)
         data = f.read()
         tokenizer = nltk.tokenize.RegexpTokenizer(r'\w+|[^\w\s]+')
         words = tokenizer.tokenize(data)
         f.close()
-
         tagged_words = nltk.pos_tag(words)
         fi = open(filename+'_tagged', 'wb')
         pickle.dump(tagged_words, fi)
@@ -105,17 +94,12 @@ class POS():
 
         return data
 
-        #def get_words_pos(self, pos):
-
-
-
-
-
 if __name__ == '__main__':
-    #markov = Markov(open("nyt_corpus_technology"), 4)
-    #print(markov.generate_markov_text(100))
+    markov = Markov("../nyt_corpus_technology_tagged", 3)
+    print(markov.generate_markov_text(markov.lidstone_smoothing, 100))
+    #print(markov.generate_markov_text(markov.add_one_smoothing, 100))
     #markov.tag_corpus('nyt_corpus_technology')
 
-    pos = POS('nyt_corpus_technology_tagged')
-    print(pos.words)
-    print(pos.pos)
+    #Markov.tag_corpus('../nyt_corpus_technology')
+    #print(pos.words)
+    #print(pos.tagged_words)
