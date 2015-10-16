@@ -2,7 +2,8 @@ import random, nltk, itertools
 from collections import Counter, defaultdict
 import pickle
 import re
-from nltk.tag import StanfordNERTagger
+import string
+
 
 class Markov(object):
 
@@ -31,7 +32,7 @@ class Markov(object):
             last_word = gram[self.chain_size-1]
             self.dictionary[tuple(gram[x][0] for x in range(self.chain_size-1))].append(last_word)
 
-    def generate_markov_text(self, smoothing_function, size=25, is_headline=False):
+    def generate_markov_text(self, smoothing_function, size=25):
         seed = random.randint(0, self.word_size - 3)
         while self.tagged_words[seed][1] != 'DT' or self.tagged_words[seed][0] == "." or self.tagged_words[seed][0] == ",": #Always start on a DT word
             seed = random.randint(0, self.word_size - 3)
@@ -56,36 +57,67 @@ class Markov(object):
             elif next_word[1] != "-NONE-":
                 final_words.append(next_word[0])
 
-
-
         final_words[0] = final_words[0].capitalize()
 
         final_text = ' '.join(final_words)
-        if not is_headline:
-            last_dot = final_text.rfind(".")
-            final_text = final_text[:-(len(final_text)-last_dot-1)]
+        last_dot = final_text.rfind(".")
+        final_text = final_text[:-(len(final_text)-last_dot-1)]
+        headline = self.generate_headline(smoothing_function)
+        return headline + "\n" + self.smooth_string(final_text)
 
-        final_text = final_text.replace(" ,", ",")
-        final_text = final_text.replace(" .", ".")
-        final_text = final_text.replace(" ?", "?")
-        final_text = final_text.replace(" !", "!")
-        final_text = final_text.replace(" :", ":")
-        final_text = final_text.replace(" ;", ";")
-        final_text = final_text.replace(" ’ ", "’")
-        final_text = final_text.replace("$ ", "$")
-        final_text = final_text.replace(" i ", " I ")
-        final_text = final_text.replace(" i,", " I,")
-        final_text = re.sub(r"i\’", "I’", final_text)
-        final_text = re.sub(r"“|”", "", final_text)
-        final_text = re.sub(r"\(|\)", "", final_text)
-        final_text = re.sub(r"\s\s", " ", final_text)
+    def generate_headline(self, smoothing_function):
+        seed = random.randint(0, self.word_size - 3)
+        while self.tagged_words[seed][1] != 'DT' or self.tagged_words[seed][0] == "." or self.tagged_words[seed][0] == ",": #Always start on a DT word
+            seed = random.randint(0, self.word_size - 3)
+        gen_words = []
+        final_words = []
+        seed_words = self.words_at_position(seed)[:-1]
+        gen_words.extend(seed_words)
+        final_words.extend(seed_words)
+        i = 0
+        tag = ""
+        while i < 7 or (tag != "NN" and tag != "NNS" and tag != "NNP"):
+            last_word_len = self.chain_size - 1
+            last_words = gen_words[-1 * last_word_len:]
 
-        #check for dots and uppercase
+            words_smoothed = smoothing_function(self.dictionary[tuple(last_words)])
+            next_word = self.pick_next_word(words_smoothed)
+            gen_words.append(next_word[0])
+            if last_words[-1] == "." or last_words[-1] == "?":
+                final_words.append(next_word[0])
+            elif next_word[1] == "NNP" and last_words[0] != "’":
+                final_words.append(next_word[0])
+            elif next_word[1] != "-NONE-":
+                final_words.append(next_word[0])
+            i += 1
+            tag = next_word[1]
 
-        return final_text
+        final_text = ' '.join(final_words)
+        first_comma = final_text.find(",")
+        final_text = final_text[:first_comma]
+        first_dot = final_text.find(".")
+        final_text = final_text[:first_dot]
+        return (string.capwords(self.smooth_string(final_text)))
+
+    def smooth_string(self, string):
+        string = string.replace(" ,", ",")
+        string = string.replace(" .", ".")
+        string = string.replace(" ?", "?")
+        string = string.replace(" !", "!")
+        string = string.replace(" :", ":")
+        string = string.replace(" ;", ";")
+        string = string.replace(" ’ ", "’")
+        string = string.replace("$ ", "$")
+        string = string.replace(" i ", " I ")
+        string = string.replace(" i,", " I,")
+        string = re.sub(r"i\’", "I’", string)
+        string = re.sub(r"“|”", "", string)
+        string = re.sub(r"\(|\)", "", string)
+        string = re.sub(r"\s\s", " ", string)
+        return string
+
 
     def add_one_smoothing(self, words):
-
         counted_words = Counter(words)
         for element in counted_words:
             counted_words[element] += 1
@@ -108,9 +140,7 @@ class Markov(object):
         f = open(filename, 'r')
         f.seek(0)
         data = f.read()
-        #tokenizer = nltk.tokenize.RegexpTokenizer(r'\w+|[^\w\s]+')
         words = nltk.word_tokenize(data)
-        #words = tokenizer.tokenize(data)
         f.close()
         tagged_words = nltk.pos_tag(words)
         fi = open(filename+'_tagged', 'wb')
