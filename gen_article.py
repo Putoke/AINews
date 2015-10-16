@@ -2,7 +2,7 @@ import random, nltk, itertools
 from collections import Counter, defaultdict
 import pickle
 import re
-import string
+import string, sys
 
 
 class Markov(object):
@@ -145,19 +145,6 @@ class Markov(object):
         index = random.randrange(sum(counted_words.values()))
         return next(itertools.islice(counted_words.elements(), index, None))
 
-    #This method loads a corpus and tags all words with part of speech tags and saves them to a filename_tagged file
-    @staticmethod
-    def tag_corpus(filename):
-        f = open(filename, 'r')
-        f.seek(0)
-        data = f.read()
-        words = nltk.word_tokenize(data)
-        f.close()
-        tagged_words = nltk.pos_tag(words)
-        fi = open(filename+'_tagged', 'wb')
-        pickle.dump(tagged_words, fi)
-        fi.close()
-
     #This function loads a tagged file
     def load_tagged_file(self, filename):
         with open(filename, 'rb') as file:
@@ -165,7 +152,6 @@ class Markov(object):
         return data
 
 if __name__ == '__main__':
-    #Markov.tag_corpus("nyt_corpus_technology_headlines")
-    #Markov.tag_corpus("nyt_corpus_technology")
-    markov = Markov("nyt_corpus_technology_tagged", 3)
-    print(markov.generate_markov_text(markov.add_one_smoothing, 25))
+    argv = sys.argv[1:]
+    markov = Markov(argv[0], int(argv[1]))
+    print(markov.generate_markov_text(markov.add_one_smoothing, int(argv[2])))
