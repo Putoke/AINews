@@ -124,5 +124,6 @@ class Markov(object):
 
 if __name__ == '__main__':
     #Markov.tag_corpus("nyt_corpus_technology_headlines")
-    markov = Markov("nyt_corpus_technology_headlines_tagged", 2)
-    print(markov.generate_markov_text(markov.add_one_smoothing, 5, True))
+    #Markov.tag_corpus("nyt_corpus_technology")
+    markov = Markov("nyt_corpus_technology_tagged", 3)
+    print(markov.generate_markov_text(markov.add_one_smoothing, 100))

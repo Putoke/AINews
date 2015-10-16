@@ -50,8 +50,12 @@ class NytCorporaGenerator:
 
     def generate_corpus_to_file(self, subject):
         f = open('nyt_corpus_' + subject, 'w')
+        f_headlines = open('nyt_corpus_' + subject + '_headlines', 'w')
         for article in self.fetch_from_nyt_crawler(subject):
-            f.write(article[0] + " ")
+            f_headlines.write(article[0] + " ")
+            f.write(article[1] + " ")
+
+
 
     def main(self, argv):
         if len(argv) >= 1:
