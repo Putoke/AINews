@@ -7,6 +7,7 @@ import string
 
 class Markov(object):
 
+    #Init all necessary variables
     def __init__(self, corpus_file, chain_size=3):
         self.chain_size = chain_size
         self.dictionary = defaultdict(list)
@@ -18,20 +19,25 @@ class Markov(object):
         self.create_dictionary()
         self.x = 0
 
+    #Returns words next to each other starting from i, where the number of words are equal to chain_size
     def words_at_position(self, i):
         chain = []
         for chain_index in range(0, self.chain_size):
             chain.append(self.words[i + chain_index])
         return chain
 
+    #Creates the n_grams with nltk's built in function
     def create_n_grams(self):
         return list(nltk.ngrams(self.tagged_words, self.chain_size))
 
+    #Creates the dictionary that will be used to generate the text from.
+    #The structure is like this (with a bigram as an example): {('have', 'prohibited'): [('them', 'PRP')] ... }
     def create_dictionary(self):
         for gram in self.n_grams:
             last_word = gram[self.chain_size-1]
             self.dictionary[tuple(gram[x][0] for x in range(self.chain_size-1))].append(last_word)
 
+    #The function that actually generates the body of the article
     def generate_markov_text(self, smoothing_function, size=25):
         seed = random.randint(0, self.word_size - 3)
         while self.tagged_words[seed][1] != 'DT' or self.tagged_words[seed][0] == "." or self.tagged_words[seed][0] == ",": #Always start on a DT word
@@ -65,6 +71,7 @@ class Markov(object):
         headline = self.generate_headline(smoothing_function)
         return headline + "\n" + self.smooth_string(final_text)
 
+    #The function that generates the headline of the article
     def generate_headline(self, smoothing_function):
         seed = random.randint(0, self.word_size - 3)
         while self.tagged_words[seed][1] != 'DT' or self.tagged_words[seed][0] == "." or self.tagged_words[seed][0] == ",": #Always start on a DT word
@@ -99,6 +106,7 @@ class Markov(object):
         final_text = final_text[:first_dot]
         return (string.capwords(self.smooth_string(final_text)))
 
+    #Makes the final text look a bit nicer. E.g. removes whitespaces before commas.
     def smooth_string(self, string):
         string = string.replace(" ,", ",")
         string = string.replace(" .", ".")
@@ -116,7 +124,7 @@ class Markov(object):
         string = re.sub(r"\s\s", " ", string)
         return string
 
-
+    #Smooths the outcome of the words with the add one smoothing technique
     def add_one_smoothing(self, words):
         counted_words = Counter(words)
         for element in counted_words:
@@ -124,6 +132,7 @@ class Markov(object):
 
         return counted_words
 
+    #Smooths the outcome of the words with the lidstone smoothing technique
     def lidstone_smoothing(self, words):
         counted_words = Counter(words)
         for element in counted_words:
@@ -131,10 +140,12 @@ class Markov(object):
             counted_words[element] += 2
         return counted_words
 
+    #Picks the next word to add to the text
     def pick_next_word(self, counted_words):
         index = random.randrange(sum(counted_words.values()))
         return next(itertools.islice(counted_words.elements(), index, None))
 
+    #This method loads a corpus and tags all words with part of speech tags and saves them to a filename_tagged file
     @staticmethod
     def tag_corpus(filename):
         f = open(filename, 'r')
@@ -147,6 +158,7 @@ class Markov(object):
         pickle.dump(tagged_words, fi)
         fi.close()
 
+    #This function loads a tagged file
     def load_tagged_file(self, filename):
         with open(filename, 'rb') as file:
             data = pickle.load(file)
@@ -156,4 +168,4 @@ if __name__ == '__main__':
     #Markov.tag_corpus("nyt_corpus_technology_headlines")
     #Markov.tag_corpus("nyt_corpus_technology")
     markov = Markov("nyt_corpus_technology_tagged", 3)
-    print(markov.generate_markov_text(markov.add_one_smoothing, 100))
+    print(markov.generate_markov_text(markov.add_one_smoothing, 25))
