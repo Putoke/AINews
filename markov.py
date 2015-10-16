@@ -33,27 +33,32 @@ class Markov(object):
 
     def generate_markov_text(self, smoothing_function, size=25, is_headline=False):
         seed = random.randint(0, self.word_size - 3)
-        while self.tagged_words[seed][1] != 'DT' and self.tagged_words[seed][0] == "." and self.tagged_words[seed][0] == ",": #Always start on a DT word
+        while self.tagged_words[seed][1] != 'DT' or self.tagged_words[seed][0] == "." or self.tagged_words[seed][0] == ",": #Always start on a DT word
             seed = random.randint(0, self.word_size - 3)
         gen_words = []
         final_words = []
         seed_words = self.words_at_position(seed)[:-1]
-        seed_words[0].title()
+        seed_words[0].capitalize()
         gen_words.extend(seed_words)
+        final_words.extend(seed_words)
+
         for i in range(size):
             last_word_len = self.chain_size - 1
             last_words = gen_words[-1 * last_word_len:]
+
             words_smoothed = smoothing_function(self.dictionary[tuple(last_words)])
             next_word = self.pick_next_word(words_smoothed)
             gen_words.append(next_word[0])
-            if last_words[len(last_words)-1] == "." or last_words[len(last_words)-1] == "?":
-                final_words.append(next_word[0].title())
-            elif next_word[1] == "NNP":
-                final_words.append(next_word[0].title())
+            if last_words[-1] == "." or last_words[-1] == "?":
+                final_words.append(next_word[0].capitalize())
+            elif next_word[1] == "NNP" and last_words[0] != "’":
+                final_words.append(next_word[0].capitalize())
             elif next_word[1] != "-NONE-":
                 final_words.append(next_word[0])
 
-        final_words[0] = final_words[0].title()
+
+
+        final_words[0] = final_words[0].capitalize()
 
         final_text = ' '.join(final_words)
         if not is_headline:
@@ -63,10 +68,14 @@ class Markov(object):
         final_text = final_text.replace(" ,", ",")
         final_text = final_text.replace(" .", ".")
         final_text = final_text.replace(" ?", "?")
+        final_text = final_text.replace(" !", "!")
+        final_text = final_text.replace(" :", ":")
+        final_text = final_text.replace(" ;", ";")
         final_text = final_text.replace(" ’ ", "’")
+        final_text = final_text.replace("$ ", "$")
         final_text = final_text.replace(" i ", " I ")
         final_text = final_text.replace(" i,", " I,")
-        final_text = re.sub(r"i\'", "I'", final_text)
+        final_text = re.sub(r"i\’", "I’", final_text)
         final_text = re.sub(r"“|”", "", final_text)
         final_text = re.sub(r"\(|\)", "", final_text)
         final_text = re.sub(r"\s\s", " ", final_text)
@@ -76,9 +85,11 @@ class Markov(object):
         return final_text
 
     def add_one_smoothing(self, words):
+
         counted_words = Counter(words)
         for element in counted_words:
             counted_words[element] += 1
+
         return counted_words
 
     def lidstone_smoothing(self, words):
@@ -97,8 +108,9 @@ class Markov(object):
         f = open(filename, 'r')
         f.seek(0)
         data = f.read()
-        tokenizer = nltk.tokenize.RegexpTokenizer(r'\w+|[^\w\s]+')
-        words = tokenizer.tokenize(data)
+        #tokenizer = nltk.tokenize.RegexpTokenizer(r'\w+|[^\w\s]+')
+        words = nltk.word_tokenize(data)
+        #words = tokenizer.tokenize(data)
         f.close()
         tagged_words = nltk.pos_tag(words)
         fi = open(filename+'_tagged', 'wb')
@@ -111,6 +123,6 @@ class Markov(object):
         return data
 
 if __name__ == '__main__':
-    Markov.tag_corpus("retardedSite/nyt_corpus_business_head")
-    #markov = Markov("retardedSite/nyt_corpus_business_head_tagged", 4)
-    #print(markov.generate_markov_text(markov.add_one_smoothing, 10, True))
+    #Markov.tag_corpus("nyt_corpus_technology_headlines")
+    markov = Markov("nyt_corpus_technology_headlines_tagged", 2)
+    print(markov.generate_markov_text(markov.add_one_smoothing, 5, True))

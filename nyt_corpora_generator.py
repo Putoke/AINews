@@ -1,5 +1,6 @@
 from bs4 import BeautifulSoup
 import requests, sys
+import re
 
 
 class NytCorporaGenerator:
@@ -17,9 +18,14 @@ class NytCorporaGenerator:
             header = soup.find('', {"class": "story-heading"})
             body = soup.find('div', {"class": "story-body"})
             body_text = soup.find_all('p', {"class": "story-content"})
+
             article_text = ""
             for t in body_text:
-                article_text += t.text
+
+                asdf = re.sub(r"“|”", "", t.text)
+                article_text += asdf + ' '
+
+
             article_tuple = (header.text, article_text)
             articles.add(article_tuple)
             i += 1
