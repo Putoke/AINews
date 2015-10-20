@@ -49,6 +49,7 @@ class Markov(object):
         gen_words.extend(seed_words)
         final_words.extend(seed_words)
 
+        #This for loop adds words using markov chains
         for i in range(size):
             last_word_len = self.chain_size - 1
             last_words = gen_words[-1 * last_word_len:]
@@ -56,11 +57,11 @@ class Markov(object):
             words_smoothed = smoothing_function(self.dictionary[tuple(last_words)])
             next_word = self.pick_next_word(words_smoothed)
             gen_words.append(next_word[0])
-            if last_words[-1] == "." or last_words[-1] == "?":
+            if last_words[-1] == "." or last_words[-1] == "?": #Capitalize words after a dot or a questionmark
                 final_words.append(next_word[0].capitalize())
-            elif next_word[1] == "NNP" and last_words[0] != "’":
+            elif next_word[1] == "NNP" and last_words[0] != "’": #Capitalize NNP words
                 final_words.append(next_word[0].capitalize())
-            elif next_word[1] != "-NONE-":
+            elif next_word[1] != "-NONE-": #Discard all words that couldn't be tagged
                 final_words.append(next_word[0])
 
         final_words[0] = final_words[0].capitalize()
@@ -83,6 +84,7 @@ class Markov(object):
         final_words.extend(seed_words)
         i = 0
         tag = ""
+        #This while loop adds words using markov chains
         while i < 7 or (tag != "NN" and tag != "NNS" and tag != "NNP"):
             last_word_len = self.chain_size - 1
             last_words = gen_words[-1 * last_word_len:]
@@ -94,16 +96,16 @@ class Markov(object):
                 final_words.append(next_word[0])
             elif next_word[1] == "NNP" and last_words[0] != "’":
                 final_words.append(next_word[0])
-            elif next_word[1] != "-NONE-":
+            elif next_word[1] != "-NONE-": #Discard all words that couldn't be tagged
                 final_words.append(next_word[0])
             i += 1
             tag = next_word[1]
 
         final_text = ' '.join(final_words)
         first_comma = final_text.find(",")
-        final_text = final_text[:first_comma]
+        final_text = final_text[:first_comma] #Remove everything after a comma
         first_dot = final_text.find(".")
-        final_text = final_text[:first_dot]
+        final_text = final_text[:first_dot] #Remove everything after a dot
         return (string.capwords(self.smooth_string(final_text)))
 
     #Makes the final text look a bit nicer. E.g. removes whitespaces before commas.

@@ -25,3 +25,4 @@ Note:
 The program has only been tested in a python 3.4 environment and is suggested to run under that version. It also has
 some dependencies which has to be installed for the program to run. These are nltk, requests, beautifulsoup4 which can
 be install with pip install. There are also some packages that might need to be downloaded with the nltk.download() function.
+These are punkt and averaged_perceptron_tagger.
